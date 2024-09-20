@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"ROCKETLAB/bus"
+	"github.com/edancain/RocketLab/bus"
 )
 
 const (
