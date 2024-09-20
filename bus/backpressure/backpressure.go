@@ -36,7 +36,7 @@ func (bpm *BackPressureManager) CheckPressure(topic string) error {
 	now := time.Now()
 	if r, exists := bpm.topicRates[topic]; exists {
 		if now.Sub(r.timestamp) < time.Second {
-			if r.count > bmp.threshold { // Example threshold: 1000 messages per second
+			if r.count > bpm.threshold { // Example threshold: 1000 messages per second
 				logger.ErrorLogger.Printf("back pressure applied: too many messages")
 				return errors.New("back pressure applied: too many messages")
 			}
@@ -46,8 +46,15 @@ func (bpm *BackPressureManager) CheckPressure(topic string) error {
 			r.timestamp = now
 		}
 	} else {
-		bpm.topicRates[topic] = &rate{count: 1, timestamp: now}
-		logger.InfoLogger.Printf("New topic added to BackPressureManager: %s", topic)
+			bpm.topicRates[topic] = &rate{count: 1, timestamp: now}
+			if logger.IsInfoEnabled() {
+				logger.InfoLogger.Printf("New topic added to BackPressureManager: %s", topic)
+			}
 	}
+		
+	if logger.IsDebugEnabled() {
+			logger.DebugLogger.Printf("Topic %s: current count %d, threshold %d", topic, bpm.topicRates[topic].count, bpm.threshold)
+	}
+		
 	return nil
 }

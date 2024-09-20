@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/edancain/RocketLab/types"
+	"github.com/edancain/RocketLab/bus/logger"
 )
 
 // OrderedDeliveryManager ensures messages are delivered in order
@@ -46,21 +47,34 @@ func (odm *OrderedDeliveryManager) DeliverMessage(msg types.Message, sub types.S
 	if _, exists := odm.topicQueues[msg.Topic]; !exists {
 		pq := make(priorityQueue, 0)
 		odm.topicQueues[msg.Topic] = &pq
+		if logger.IsInfoEnabled() {
+			logger.InfoLogger.Printf("New topic queue created for: %s", msg.Topic)
+		}
 	}
 
 	queue := odm.topicQueues[msg.Topic]
 	heap.Push(queue, msg)
 
+	if logger.IsDebugEnabled() {
+		logger.DebugLogger.Printf("Message pushed to queue for topic %s. Queue size: %d", msg.Topic, queue.Len())
+	}
+
+	deliveredCount := 0
 	// Deliver all messages that are ready
 	for queue.Len() > 0 {
 		nextMsg := heap.Pop(queue).(types.Message)
 		if time.Since(nextMsg.Timestamp) >= 0 {
 			sub(nextMsg.Timestamp, nextMsg.Content)
+			deliveredCount++
 		} else {
 			// If the next message is in the future, push it back and break
 			heap.Push(queue, nextMsg)
 			break
 		}
+	}
+
+	if logger.IsDebugEnabled() {
+		logger.DebugLogger.Printf("Delivered %d messages for topic %s. Remaining in queue: %d", deliveredCount, msg.Topic, queue.Len())
 	}
 
 	return nil
