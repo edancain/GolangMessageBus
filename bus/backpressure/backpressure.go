@@ -24,7 +24,7 @@ type rate struct {
 func NewBackPressureManager(threshold int) *BackPressureManager {
 	return &BackPressureManager{
 		topicRates: make(map[string]*rate),
-		threshold: threshold
+		threshold: threshold,
 	}
 }
 

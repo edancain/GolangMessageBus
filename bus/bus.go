@@ -5,12 +5,11 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/edancain/RocketLab/bus/backpressure"
-	"github.com/edancain/RocketLab/bus/datadictionary"
-	"github.com/edancain/RocketLab/bus/logger"
-	"github.com/edancain/RocketLab/bus/ordereddelivery"
-	"github.com/edancain/RocketLab/bus/publisher"
-    "github.com/edancain/RocketLab/bus/types"
+	"github.com/edancain/RocketLab/types"
+    "github.com/edancain/RocketLab/bus/backpressure"
+    "github.com/edancain/RocketLab/bus/datadictionary"
+    "github.com/edancain/RocketLab/bus/ordereddelivery"
+    "github.com/edancain/RocketLab/bus/publisher"
 )
 
 // MessageBus is the central coordinator of the system
@@ -44,7 +43,7 @@ type messageBus struct {
 	// The BackPressureManager monitors the rate of message production and consumption.
 	// If publishers are producing messages faster than subscribers can consume them, it can slow down or temporarily stop publishers to prevent system overload.
 	// This helps maintain system stability and prevents memory exhaustion from buffering too many messages.
-	backPressure types.BackPressureManager
+	backPressure      *backpressure.BackPressureManager
 
 	// orderedDelivery *OrderedDeliveryManager:
 	// This component ensures that messages are delivered to subscribers in the correct order, which is crucial for maintaining data integrity in many systems.
@@ -52,7 +51,7 @@ type messageBus struct {
 	// It may use techniques like message sequencing or timestamps to track the order of messages.
 	// It can buffer out-of-order messages and deliver them only when all preceding messages have been processed.
 	//  This is particularly important in scenarios where the order of events matters, like in your example of rocket telemetry data.
-	orderedDelivery types.OrderedDeliveryManager
+	orderedDelivery   *ordereddelivery.OrderedDeliveryManager
 
 	// mutex sync.RWMutex:
 	// This is a read-write mutex from Go's sync package, used for synchronization.
@@ -74,10 +73,10 @@ type messageBus struct {
 }
 
 // NewMessageBus creates and returns a new MessageBus instance
-func NewMessageBus() MessageBus {
+func NewMessageBus() types.MessageBus {
 	return &messageBus{
-		publishers:      make(map[string]map[*Publisher]struct{}),
-		subscribers:     make(map[string]map[Subscription]struct{}),
+		publishers:      make(map[string]map[types.Publisher]struct{}),
+		subscribers:     make(map[string]map[types.Subscription]struct{}),
 		messages:        datadictionary.NewDataDictionary(),
 		backPressure:    backpressure.NewBackPressureManager(),
 		orderedDelivery: ordereddelivery.NewOrderedDeliveryManager(),
@@ -93,12 +92,12 @@ func NewMessageBus() MessageBus {
 // Instead of directly creating a Publisher with new Publisher(), we use this method to encapsulate the creation process.
 // This allows us to perform additional setup (like registering the publisher with the MessageBus) and potentially return different types of publishers if needed in the future.
 // It provides a single point of control for creating publishers, making it easier to modify the creation process if requirements change.
-func (mb *messageBus) GetPublisher(topic string) Publisher {
+func (mb *messageBus) GetPublisher(topic string) types.Publisher {
 	mb.mutex.Lock()
 	defer mb.mutex.Unlock()
 
 	if _, exists := mb.publishers[topic]; !exists {
-		mb.publishers[topic] = make(map[*Publisher]struct{})
+		mb.publishers[topic] = make(map[types.Publisher]struct{})
 	}
 
 	pub := publisher.NewPubisher(topic, mb)
@@ -109,12 +108,12 @@ func (mb *messageBus) GetPublisher(topic string) Publisher {
 }
 
 // Subscribe registers a new subscription for the given topic
-func (mb *messageBus) Subscribe(topic string, sub Subscription) (unsubscribe func()) {
+func (mb *messageBus) Subscribe(topic string, sub types.Subscription) (unsubscribe func()) {
 	mb.mutex.Lock()
 	defer mb.mutex.Unlock()
 
 	if _, exists := mb.subscribers[topic]; !exists {
-		mb.subscribers[topic] = make(map[Subscription]struct{})
+		mb.subscribers[topic] = make(map[types.Subscription]struct{})
 	}
 
 	mb.subscribers[topic][sub] = struct{}{}
@@ -130,7 +129,7 @@ func (mb *messageBus) Subscribe(topic string, sub Subscription) (unsubscribe fun
 
 // publish sends a message to all subscribers of the given topic
 // demonstrates error handling, returning errors for back pressure issues and message storage failures.
-func (mb *messageBus) publish(msg Message) error {
+func (mb *messageBus) PublishMessage(msg types.Message) error {
 	mb.mutex.RLock()
 	defer mb.mutex.RUnlock()
 
@@ -163,22 +162,16 @@ func (mb *messageBus) publish(msg Message) error {
 }
 
 // Stats returns the current stats of the MessageBus
-func (mb *messageBus) Stats(now time.Time) Stats {
+func (mb *messageBus) Stats(now time.Time) types.Stats {
 	mb.mutex.RLock()
 	defer mb.mutex.RUnlock()
 
-	return Stats{
+	return types.Stats{
 		TotalMessages:     int(mb.msgCount.Load()),
 		PublisherCount:    int(mb.pubCount.Load()),
 		SubscriptionCount: int(mb.subCount.Load()),
 		TopicFrequency:    mb.calculateTopicFrequency(now),
 	}
-}
-
-// calculateTopicFrequency calculates the frequency of messages for each topic
-func (mb *messageBus) calculateTopicFrequency(now time.Time) map[string]float64 {
-	// Implementation to be added
-	return nil
 }
 
 func (mb *messageBus) RemovePublisher(p Publisher) {
@@ -204,4 +197,20 @@ func (mb *messageBus) calculateTopicFrequency(now time.Time) map[string]float64 
 	}
 
 	return frequencies
+}
+
+func (mb *messageBus) RemovePublisher(p types.Publisher) {
+    mb.mutex.Lock()
+    defer mb.mutex.Unlock()
+
+    for topic, publishers := range mb.publishers {
+        if _, exists := publishers[p]; exists {
+            delete(publishers, p)
+            mb.pubCount.Add(-1)
+            if len(publishers) == 0 {
+                delete(mb.publishers, topic)
+            }
+            break
+        }
+    }
 }

@@ -25,9 +25,9 @@ var (
 )
 
 func init() {
-	DebugLogger = log.New(os.Stderr, "DEBUG: ", log.Ldate|log.Ltime|log.Lshortfile)
 	ErrorLogger = log.New(os.Stderr, "ERROR: ", log.Ldate|log.Ltime|log.Lshortfile)
 	InfoLogger = log.New(os.Stdout, "INFO: ", log.Ldate|log.Ltime|log.Lshortfile)
+	DebugLogger = log.New(os.Stdout, "DEBUG: ", log.Ldate|log.Ltime|log.Lshortfile)
 	SetLogLevel(LevelInfo) // Default to INFO level
 }
 
@@ -36,17 +36,25 @@ func SetLogLevel(level LogLevel) {
 	defer levelMutex.Unlock()
 	currentLevel = level
 
-	if level < LevelDebug {
-		DebugLogger.SetOutput(ioutil.Discard)
-	} else {
-		DebugLogger.SetOutput(os.Stdout)
-	}
-
+	// ErrorLogger always remains active
+	
 	if level < LevelInfo {
 		InfoLogger.SetOutput(ioutil.Discard)
 	} else {
 		InfoLogger.SetOutput(os.Stdout)
 	}
+
+	if level < LevelDebug {
+		DebugLogger.SetOutput(ioutil.Discard)
+	} else {
+		DebugLogger.SetOutput(os.Stdout)
+	}
+}
+
+func GetLogLevel() LogLevel {
+	levelMutex.RLock()
+	defer levelMutex.RUnlock()
+	return currentLevel
 }
 
 func IsDebugEnabled() bool {
@@ -55,10 +63,4 @@ func IsDebugEnabled() bool {
 
 func IsInfoEnabled() bool {
     return GetLogLevel() >= LevelInfo
-}
-
-func getLogLevel() LogLevel {
-	levelMutex.RLock()
-	defer levelMutex.RUnlock()
-	return currentLevel
 }

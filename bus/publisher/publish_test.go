@@ -12,6 +12,7 @@ import (
 // MockMessageBus is a mock implementation of the MessageBus interface for testing
 type MockMessageBus struct {
 	publishedMessages []types.Message
+	removedPublishers []types.Publisher
 }
 
 func (m *MockMessageBus) PublishMessage(msg types.Message) error {
@@ -31,7 +32,47 @@ func (m *MockMessageBus) Stats(now time.Time) types.Stats {
 	return types.Stats{}
 }
 
-func (m *MockMessageBus) RemovePublisher(p types.Publisher) {}
+func (m *MockMessageBus) RemovePublisher(p types.Publisher) {
+	m.removedPublishers = append(m.removedPublishers, p)
+}
+
+func TestPublish(t *testing.T) {
+	mockBus := &MockMessageBus{}
+	pub := NewPublisher("test-topic", mockBus)
+
+	testMessage := "Hello, World!"
+	testTime := time.Now()
+	err := pub.Publish(testTime, testMessage)
+	if err != nil {
+		t.Errorf("Publish failed: %v", err)
+	}
+
+	if len(mockBus.publishedMessages) != 1 {
+		t.Errorf("Expected 1 published message, got %d", len(mockBus.publishedMessages))
+	}
+
+	publishedMsg := mockBus.publishedMessages[0]
+	if publishedMsg.Topic != "test-topic" || publishedMsg.Content != testMessage || !publishedMsg.Timestamp.Equal(testTime) {
+		t.Errorf("Published message does not match expected values")
+	}
+}
+
+func TestClose(t *testing.T) {
+	mockBus := &MockMessageBus{}
+	pub := NewPublisher("test-topic", mockBus)
+
+	pub.Close()
+
+	if len(mockBus.removedPublishers) != 1 {
+		t.Errorf("Expected 1 removed publisher, got %d", len(mockBus.removedPublishers))
+	}
+
+	// Attempt to publish after closing
+	err := pub.Publish(time.Now(), "This should fail")
+	if err == nil {
+		t.Error("Expected error when publishing to closed publisher, got nil")
+	}
+}
 
 func TestPublisherLogging(t *testing.T) {
 	tests := []struct {
@@ -66,7 +107,13 @@ func TestPublisherLogging(t *testing.T) {
 				t.Fatalf("Publish failed: %v", err)
 			}
 
-			// Check Error logs (should always be present)
+			// Close the publisher
+			pub.Close()
+
+			// Attempt to publish after closing (should produce an error log)
+			pub.Publish(time.Now(), "This should fail")
+
+			// Check Error logs
 			gotError := errorBuffer.Len() > 0
 			if gotError != tt.wantError {
 				t.Errorf("Error logging: got %v, want %v", gotError, tt.wantError)

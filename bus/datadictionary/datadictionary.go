@@ -6,7 +6,7 @@ import (
     "container/list"
     "errors"
 
-    "github.com/edancain/RocketLab/bus/types"
+    "github.com/edancain/RocketLab/types"
 	"github.com/edancain/RocketLab/bus/logger"
 )
 
@@ -31,7 +31,7 @@ func NewDataDictionary() *DataDictionary {
 }
 
 // Store adds a new message to the DataDictionary
-func (dd *DataDictionary) Store(msg bus.Message) error {
+func (dd *DataDictionary) Store(msg types.Message) error {
 	dd.mutex.Lock()
 	defer dd.mutex.Unlock()
 

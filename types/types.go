@@ -17,6 +17,15 @@ type Stats struct {
 	TopicFrequency    map[string]float64
 }
 
+type BackPressureManager interface {
+    CheckPressure(topic string) error
+}
+
+type DataDictionary interface {
+    Store(msg Message) error
+    GetMessages(topic string, start, end time.Time) []Message
+}
+
 type MessageBus interface {
     GetPublisher(topic string) Publisher
     Subscribe(topic string, sub Subscription) (unsubscribe func())
@@ -27,10 +36,6 @@ type MessageBus interface {
 
 type OrderedDeliveryManager interface {
     DeliverMessage(msg Message, sub Subscription) error
-}
-
-type BackPressureManager interface {
-    CheckPressure(topic string) error
 }
 
 type Publisher interface {

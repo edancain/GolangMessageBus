@@ -59,7 +59,7 @@ func (p *Publisher) Publish(timestamp time.Time, message string) error {
 // Close marks the publisher as inactive
 func (p *Publisher) Close() {
 	p.active.Store(false)
-	p.bus.removePublisher(p)
+	p.bus.RemovePublisher(p)
 	if logger.IsInfoEnabled() {
 		logger.InfoLogger.Printf("Publisher closed for topic: %s", p.topic)
 	}
