@@ -1,11 +1,13 @@
 package datadictionary
 
 import (
-	"container/list"
 	"sync"
-	"time"
+    "time"
+    "container/list"
+    "errors"
 
-	"github.com/edancain/RocketLab/bus/types"
+    "github.com/edancain/RocketLab/bus/types"
+
 )
 
 const (
@@ -24,8 +26,6 @@ func NewDataDictionary() *DataDictionary {
 	dd := &DataDictionary{
 		messages: make(map[string]*list.List),
 	}
-	go dd.periodicCleanup()
-	return dd
 }
 
 // Store adds a new message to the DataDictionary
@@ -37,17 +37,12 @@ func (dd *DataDictionary) Store(msg bus.Message) error {
 		dd.messages[msg.Topic] = list.New()
 	}
 
-	topicList := dd.messages[msg.Topic]
+	if dd.messages[msg.Topic].Len() >= maxMessagesPerTopic {
+        return errors.New("max messages per topic reached")
+    }
 
-	// Enforce size limit
-	if topicList.Len() >= maxMessagesPerTopic {
-		return errors.New("max messages per topic reached")
-	}
-
-	topicList.PushBack(msg)
-	return nil
-
-	return nil
+    dd.messages[msg.Topic].PushBack(msg)
+    return nil
 }
 
 // GetMessages retrieves messages for a given topic and time range
@@ -58,7 +53,7 @@ func (dd *DataDictionary) GetMessages(topic string, start, end time.Time) []bus.
 	var result []bus.Message
 	if msgList, exists := dd.messages[topic]; exists {
 		for e := msgList.Front(); e != nil; e = e.Next() {
-			msg := e.Value.(bus.Message)
+			msg := e.Value.(types.Message)
 			if msg.Timestamp.After(start) && msg.Timestamp.Before(end) {
 				result = append(result, msg)
 			}

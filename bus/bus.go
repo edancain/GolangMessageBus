@@ -34,9 +34,9 @@ import (
 // By combining these different synchronization mechanisms (mutexes, atomic operations, and soon-to-be-implemented channels), we're aiming to create a system that is
 // both thread-safe and performant, allowing for high concurrency while maintaining data integrity.
 type messageBus struct {
-	publishers  map[string]map[*Publisher]struct{}
-	subscribers map[string]map[bus.Subscription]struct{}
-	messages    *datadictionary.DataDictionary
+	publishers  map[string]map[types.Publisher]struct{}
+	subscribers map[string]map[types.Subscription]struct{}
+	messages    types.DataDictionary
 
 	// backPressure *BackPressureManager:
 	// Back pressure is a mechanism to handle scenarios where the rate of incoming data exceeds the rate at which it can be processed.
@@ -44,7 +44,7 @@ type messageBus struct {
 	// The BackPressureManager monitors the rate of message production and consumption.
 	// If publishers are producing messages faster than subscribers can consume them, it can slow down or temporarily stop publishers to prevent system overload.
 	// This helps maintain system stability and prevents memory exhaustion from buffering too many messages.
-	backPressure *backpressure.BackPressureManager
+	backPressure types.BackPressureManager
 
 	// orderedDelivery *OrderedDeliveryManager:
 	// This component ensures that messages are delivered to subscribers in the correct order, which is crucial for maintaining data integrity in many systems.
@@ -52,7 +52,7 @@ type messageBus struct {
 	// It may use techniques like message sequencing or timestamps to track the order of messages.
 	// It can buffer out-of-order messages and deliver them only when all preceding messages have been processed.
 	//  This is particularly important in scenarios where the order of events matters, like in your example of rocket telemetry data.
-	orderedDelivery *ordereddelivery.OrderedDeliveryManager
+	orderedDelivery types.OrderedDeliveryManager
 
 	// mutex sync.RWMutex:
 	// This is a read-write mutex from Go's sync package, used for synchronization.

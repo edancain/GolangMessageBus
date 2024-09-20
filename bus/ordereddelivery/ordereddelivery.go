@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/edancain/RocketLab/bus"
+	"github.com/edancain/RocketLab/types"
 )
 
 // OrderedDeliveryManager ensures messages are delivered in order
@@ -15,14 +15,14 @@ type OrderedDeliveryManager struct {
 }
 
 // priorityQueue is a min-heap of Messages
-type priorityQueue []bus.Message
+type priorityQueue []types.Message
 
 func (pq priorityQueue) Len() int { return len(pq) }
 func (pq priorityQueue) Less(i, j int) bool {
 	return pq[i].Timestamp.Before(pq[j].Timestamp)
 }
 func (pq priorityQueue) Swap(i, j int)       { pq[i], pq[j] = pq[j], pq[i] }
-func (pq *priorityQueue) Push(x interface{}) { *pq = append(*pq, x.(bus.Message)) }
+func (pq *priorityQueue) Push(x interface{}) { *pq = append(*pq, x.(types.Message)) }
 func (pq *priorityQueue) Pop() interface{} {
 	old := *pq
 	n := len(old)
@@ -39,7 +39,7 @@ func NewOrderedDeliveryManager() *OrderedDeliveryManager {
 }
 
 // DeliverMessage delivers a message to a subscriber in order
-func (odm *OrderedDeliveryManager) DeliverMessage(msg bus.Message, sub bus.Subscription) error {
+func (odm *OrderedDeliveryManager) DeliverMessage(msg types.Message, sub types.Subscription) error {
 	odm.mutex.Lock()
 	defer odm.mutex.Unlock()
 
@@ -53,7 +53,7 @@ func (odm *OrderedDeliveryManager) DeliverMessage(msg bus.Message, sub bus.Subsc
 
 	// Deliver all messages that are ready
 	for queue.Len() > 0 {
-		nextMsg := heap.Pop(queue).(bus.Message)
+		nextMsg := heap.Pop(queue).(types.Message)
 		if time.Since(nextMsg.Timestamp) >= 0 {
 			sub(nextMsg.Timestamp, nextMsg.Content)
 		} else {

@@ -18,11 +18,19 @@ type Stats struct {
 }
 
 type MessageBus interface {
-	GetPublisher(topic string) Publisher
-	Subscribe(topic string, sub Subscription) func()
-	Stats(now time.Time) Stats
-	PublishMessage(msg Message) error // New method for internal use
-	RemovePublisher(p Publisher)
+    GetPublisher(topic string) Publisher
+    Subscribe(topic string, sub Subscription) (unsubscribe func())
+    Stats(now time.Time) Stats
+    PublishMessage(msg Message) error
+    RemovePublisher(p Publisher)
+}
+
+type OrderedDeliveryManager interface {
+    DeliverMessage(msg Message, sub Subscription) error
+}
+
+type BackPressureManager interface {
+    CheckPressure(topic string) error
 }
 
 type Publisher interface {

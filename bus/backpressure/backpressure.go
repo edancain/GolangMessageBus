@@ -12,6 +12,7 @@ import (
 type BackPressureManager struct {
 	topicRates map[string]*rate
 	mutex      sync.RWMutex
+	threshold int
 }
 
 type rate struct {
@@ -20,9 +21,10 @@ type rate struct {
 }
 
 // NewBackPressureManager creates a new BackPressureManager
-func NewBackPressureManager() *BackPressureManager {
+func NewBackPressureManager(threshold int) *BackPressureManager {
 	return &BackPressureManager{
 		topicRates: make(map[string]*rate),
+		threshold: threshold
 	}
 }
 
@@ -34,7 +36,7 @@ func (bpm *BackPressureManager) CheckPressure(topic string) error {
 	now := time.Now()
 	if r, exists := bpm.topicRates[topic]; exists {
 		if now.Sub(r.timestamp) < time.Second {
-			if r.count > 1000 { // Example threshold: 1000 messages per second
+			if r.count > bmp.threshold { // Example threshold: 1000 messages per second
 				logger.ErrorLogger.Printf("back pressure applied: too many messages")
 				return errors.New("back pressure applied: too many messages")
 			}
@@ -45,6 +47,7 @@ func (bpm *BackPressureManager) CheckPressure(topic string) error {
 		}
 	} else {
 		bpm.topicRates[topic] = &rate{count: 1, timestamp: now}
+		logger.InfoLogger.Printf("New topic added to BackPressureManager: %s", topic)
 	}
 	return nil
 }
