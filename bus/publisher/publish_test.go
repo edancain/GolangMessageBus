@@ -111,7 +111,10 @@ func TestPublisherLogging(t *testing.T) {
 			pub.Close()
 
 			// Attempt to publish after closing (should produce an error log)
-			pub.Publish(time.Now(), "This should fail")
+			err := pub.Publish(time.Now(), "This should fail")
+			if err == nil {
+				t.Error("Expected an error, but got nil")
+			}
 
 			// Check Error logs
 			gotError := errorBuffer.Len() > 0

@@ -112,7 +112,10 @@ func TestLogLevels(t *testing.T) {
 			
 			// Trigger all types of logs
 			for i := 0; i < 11; i++ {
-				bpm.CheckPressure("test-topic")
+				err := bpm.CheckPressure("test-topic")
+				if err != nil {
+					t.Errorf("Unexpected error: %v", err)
+				}
 			}
 
 			gotError := errorBuffer.Len() > 0

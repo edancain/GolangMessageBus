@@ -135,7 +135,10 @@ func TestLogLevels(t *testing.T) {
 			
 			// Trigger all types of logs
 			msg := types.Message{Timestamp: time.Now(), Topic: "test-topic", Content: "Test message"}
-			odm.DeliverMessage(msg, func(timestamp time.Time, content string) {})
+			err := odm.DeliverMessage(msg, func(timestamp time.Time, content string) {})
+			if err != nil {
+				t.Errorf("Unexpected error: %v", err)
+			}
 
 			gotError := errorBuffer.Len() > 0
 			if gotError != tt.wantError {

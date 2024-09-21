@@ -135,7 +135,10 @@ func TestLogLevels(t *testing.T) {
 			// Trigger all types of logs
 			msg := types.Message{Timestamp: time.Now(), Topic: "test-topic", Content: "Test message"}
 			for i := 0; i < maxMessagesPerTopic+1; i++ {
-				dd.Store(msg)
+				err := dd.Store(msg)
+				if err != nil {
+					t.Errorf("Unexpected error storing message: %v", err)
+				}
 			}
 
 			gotError := errorBuffer.Len() > 0
