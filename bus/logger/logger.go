@@ -39,13 +39,13 @@ func SetLogLevel(level LogLevel) {
 	// ErrorLogger always remains active
 	
 	if level < LevelInfo {
-		InfoLogger.SetOutput(ioutil.Discard)
+		InfoLogger.SetOutput(io.Discard)
 	} else {
 		InfoLogger.SetOutput(os.Stdout)
 	}
 
 	if level < LevelDebug {
-		DebugLogger.SetOutput(ioutil.Discard)
+		DebugLogger.SetOutput(io.Discard)
 	} else {
 		DebugLogger.SetOutput(os.Stdout)
 	}
