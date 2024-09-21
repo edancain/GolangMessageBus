@@ -174,19 +174,6 @@ func (mb *messageBus) Stats(now time.Time) types.Stats {
 	}
 }
 
-func (mb *messageBus) RemovePublisher(p Publisher) {
-	mb.mutex.Lock()
-	defer mb.mutex.Unlock()
-
-	for _, publishers := range mb.publishers {
-		if _, exists := publishers[p]; exists {
-			delete(publishers, p)
-			mb.pubCount.Add(-1)
-			break
-		}
-	}
-}
-
 func (mb *messageBus) calculateTopicFrequency(now time.Time) map[string]float64 {
 	frequencies := make(map[string]float64)
 	sixtySecondsAgo := now.Add(-60 * time.Second)
