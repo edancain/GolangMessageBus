@@ -100,7 +100,7 @@ func (mb *messageBus) GetPublisher(topic string) types.Publisher {
 		mb.publishers[topic] = make(map[types.Publisher]struct{})
 	}
 
-	pub := publisher.NewPubisher(topic, mb)
+	pub := publisher.NewPublisher(topic, mb)
 	mb.publishers[topic][pub] = struct{}{}
 	mb.pubCount.Add(1)
 

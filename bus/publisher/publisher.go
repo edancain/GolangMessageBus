@@ -16,7 +16,7 @@ type Publisher struct {
 	active atomic.Bool
 }
 
-func NewPublisher(topic string, bus types.MessageBus) *Publisher {
+func NewPublisher(topic string, bus types.MessageBus) types.Publisher {
 	p := &Publisher{
 		topic: topic,
 		bus:   bus,
