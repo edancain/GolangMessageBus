@@ -34,7 +34,7 @@ import (
 // both thread-safe and performant, allowing for high concurrency while maintaining data integrity.
 type messageBus struct {
 	publishers  map[string]map[types.Publisher]struct{}
-	subscribers map[string]map[types.Subscription]struct{}
+	subscribers map[string][]types.Subscription
 	messages    types.DataDictionary
 
 	// backPressure *BackPressureManager:
@@ -76,9 +76,9 @@ type messageBus struct {
 func NewMessageBus() types.MessageBus {
 	return &messageBus{
 		publishers:      make(map[string]map[types.Publisher]struct{}),
-		subscribers:     make(map[string]map[types.Subscription]struct{}),
+		subscribers:     make(map[string][]types.Subscription),
 		messages:        datadictionary.NewDataDictionary(),
-		backPressure:    backpressure.NewBackPressureManager(),
+		backPressure:    backpressure.NewBackPressureManager(1000), //a default value
 		orderedDelivery: ordereddelivery.NewOrderedDeliveryManager(),
 	}
 }
@@ -109,22 +109,23 @@ func (mb *messageBus) GetPublisher(topic string) types.Publisher {
 
 // Subscribe registers a new subscription for the given topic
 func (mb *messageBus) Subscribe(topic string, sub types.Subscription) (unsubscribe func()) {
-	mb.mutex.Lock()
-	defer mb.mutex.Unlock()
+    mb.mutex.Lock()
+    defer mb.mutex.Unlock()
 
-	if _, exists := mb.subscribers[topic]; !exists {
-		mb.subscribers[topic] = make(map[types.Subscription]struct{})
-	}
+    mb.subscribers[topic] = append(mb.subscribers[topic], sub)
+    mb.subCount.Add(1)
 
-	mb.subscribers[topic][sub] = struct{}{}
-	mb.subCount.Add(1)
-
-	return func() {
-		mb.mutex.Lock()
-		defer mb.mutex.Unlock()
-		delete(mb.subscribers[topic], sub)
-		mb.subCount.Add(-1)
-	}
+    return func() {
+        mb.mutex.Lock()
+        defer mb.mutex.Unlock()
+        for i, s := range mb.subscribers[topic] {
+            if &s == &sub {
+                mb.subscribers[topic] = append(mb.subscribers[topic][:i], mb.subscribers[topic][i+1:]...)
+                mb.subCount.Add(-1)
+                break
+            }
+        }
+    }
 }
 
 // publish sends a message to all subscribers of the given topic
@@ -145,20 +146,20 @@ func (mb *messageBus) PublishMessage(msg types.Message) error {
 	}
 
 	subscribers, exists := mb.subscribers[msg.Topic]
-	if !exists {
-		return nil // No subscribers for this topic, which is not an error
-	}
+    if !exists {
+        return nil // No subscribers for this topic, which is not an error
+    }
 
-	for sub := range subscribers {
-		go func(s Subscription) {
-			if err := mb.orderedDelivery.DeliverMessage(msg, s); err != nil {
-				logger.ErrorLogger.Printf("Error delivering message for topic %s: %v", msg.Topic, err)
-			}
-		}(sub)
-	}
+    for _, sub := range subscribers {
+        go func(s types.Subscription) {
+            if err := mb.orderedDelivery.DeliverMessage(msg, s); err != nil {
+                logger.ErrorLogger.Printf("Error delivering message for topic %s: %v", msg.Topic, err)
+            }
+        }(sub)
+    }
 
-	mb.msgCount.Add(1)
-	return nil
+    mb.msgCount.Add(1)
+    return nil
 }
 
 // Stats returns the current stats of the MessageBus
