@@ -10,6 +10,7 @@ import (
     "github.com/edancain/RocketLab/bus/datadictionary"
     "github.com/edancain/RocketLab/bus/ordereddelivery"
     "github.com/edancain/RocketLab/bus/publisher"
+	"github.com/edancain/RocketLab/bus/logger"
 )
 
 // MessageBus is the central coordinator of the system
