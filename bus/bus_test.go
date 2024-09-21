@@ -132,7 +132,10 @@ func TestMessageBusLogging(t *testing.T) {
             mb := NewMessageBus()
             pub := mb.GetPublisher("test-topic")
             mb.Subscribe("test-topic", func(timestamp time.Time, message string) {})
-            pub.Publish(time.Now(), "test message")
+            err := pub.Publish(time.Now(), "test message")
+            if err != nil {
+                t.Errorf("Unexpected error publishing message: %v", err)
+            }
 
             gotInfo := infoBuffer.Len() > 0
             if gotInfo != tt.wantInfo {
