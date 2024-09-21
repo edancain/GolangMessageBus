@@ -97,7 +97,7 @@ func TestMultipleTopics(t *testing.T) {
 		}
 
 		for i, msg := range receivedMessages[topic] {
-			expectedContent := "Message " + string(i+1)
+			expectedContent := fmt.Sprintf("Message %d", i+1)
 			if msg.Content != expectedContent {
 				t.Errorf("Expected message content %s for %s, got %s", expectedContent, topic, msg.Content)
 			}
