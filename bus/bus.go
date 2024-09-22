@@ -174,15 +174,20 @@ func (mb *messageBus) Stats(now time.Time) types.Stats {
 }
 
 func (mb *messageBus) calculateTopicFrequency(now time.Time) map[string]float64 {
-	frequencies := make(map[string]float64)
-	sixtySecondsAgo := now.Add(-60 * time.Second)
+    frequencies := make(map[string]float64)
+    sixtySecondsAgo := now.Add(-60 * time.Second)
 
-	for topic := range mb.subscribers {
-		messages := mb.messages.GetMessages(topic, sixtySecondsAgo, now)
-		frequencies[topic] = float64(len(messages)) / 60.0 // messages per second
-	}
+    for topic := range mb.subscribers {
+        messages := mb.messages.GetMessages(topic, sixtySecondsAgo, now)
+        if len(messages) > 0 {
+            duration := messages[len(messages)-1].Timestamp.Sub(messages[0].Timestamp).Seconds()
+            if duration > 0 {
+                frequencies[topic] = float64(len(messages)) / duration
+            }
+        }
+    }
 
-	return frequencies
+    return frequencies
 }
 
 func (mb *messageBus) RemovePublisher(p types.Publisher) {
