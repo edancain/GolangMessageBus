@@ -4,10 +4,10 @@ import (
 	"sync"
     "time"
     "container/list"
-    "errors"
+	"fmt"
 
     "github.com/edancain/RocketLab/types"
-	"github.com/edancain/RocketLab/bus/logger"
+	"github.com/edancain/RocketLab/bus/logger" 
 )
 
 const (
@@ -32,28 +32,19 @@ func NewDataDictionary() *DataDictionary {
 
 // Store adds a new message to the DataDictionary
 func (dd *DataDictionary) Store(msg types.Message) error {
-	dd.mutex.Lock()
-	defer dd.mutex.Unlock()
+    dd.mutex.Lock()
+    defer dd.mutex.Unlock()
 
-	if _, exists := dd.messages[msg.Topic]; !exists {
-		dd.messages[msg.Topic] = list.New()
-		if logger.IsInfoEnabled() {
-			logger.InfoLogger.Printf("New topic created in DataDictionary: %s", msg.Topic)
-		}
-	}
+    if _, exists := dd.messages[msg.Topic]; !exists {
+        dd.messages[msg.Topic] = list.New()
+    }
 
-	if dd.messages[msg.Topic].Len() >= maxMessagesPerTopic {
-		logger.ErrorLogger.Printf("Max messages reached for topic: %s", msg.Topic)
-		return errors.New("max messages per topic reached")
-	}
+    if dd.messages[msg.Topic].Len() >= maxMessagesPerTopic {
+        return fmt.Errorf("max messages per topic reached")
+    }
 
-	dd.messages[msg.Topic].PushBack(msg)
-	
-	if logger.IsDebugEnabled() {
-		logger.DebugLogger.Printf("Message stored for topic %s, total messages: %d", msg.Topic, dd.messages[msg.Topic].Len())
-	}
-	
-	return nil
+    dd.messages[msg.Topic].PushBack(msg)
+    return nil
 }
 
 // GetMessages retrieves messages for a given topic and time range
@@ -88,29 +79,27 @@ func (dd *DataDictionary) periodicCleanup() {
 }
 
 func (dd *DataDictionary) cleanupExpiredMessages() {
-	dd.mutex.Lock()
-	defer dd.mutex.Unlock()
+    dd.mutex.Lock()
+    defer dd.mutex.Unlock()
 
-	now := time.Now()
-	for topic, msgList := range dd.messages {
-		var next *list.Element
-		removedCount := 0
-		for e := msgList.Front(); e != nil; e = next {
-			next = e.Next()
-			msg := e.Value.(types.Message)
-			if now.Sub(msg.Timestamp) > messageExpirationTime {
-				msgList.Remove(e)
-				removedCount++
-			}
-		}
-		if msgList.Len() == 0 {
-			delete(dd.messages, topic)
-			if logger.IsInfoEnabled() {
-				logger.InfoLogger.Printf("Removed empty topic from DataDictionary: %s", topic)
-			}
-		}
-		if logger.IsDebugEnabled() && removedCount > 0 {
-			logger.DebugLogger.Printf("Cleaned up %d expired messages for topic %s", removedCount, topic)
-		}
-	}
+    now := time.Now()
+    for topic, msgList := range dd.messages {
+        var next *list.Element
+        removedCount := 0
+        for e := msgList.Front(); e != nil; e = next {
+            next = e.Next()
+            msg := e.Value.(types.Message)
+            if now.Sub(msg.Timestamp) > messageExpirationTime {
+                msgList.Remove(e)
+                removedCount++
+            } else {
+                // If we've found a message that's not expired, we can stop searching
+                break
+            }
+        }
+        if msgList.Len() == 0 {
+            delete(dd.messages, topic)
+        }
+        fmt.Printf("Cleaned up %d messages for topic %s\n", removedCount, topic)
+    }
 }
