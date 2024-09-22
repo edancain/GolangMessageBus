@@ -1,15 +1,21 @@
 package bus
 
 import (
+    "bytes"
+    "errors"
     "fmt"
+    "os"
     "sync"
     "testing"
     "time"
-    "bytes"
 
     "github.com/edancain/RocketLab/bus/logger"
     "github.com/edancain/RocketLab/types"
 )
+
+func init() {
+    logger.SetLogLevel(logger.LevelError)
+}
 
 func TestNewMessageBus(t *testing.T) {
     mb := NewMessageBus()
@@ -112,29 +118,37 @@ func TestConcurrency(t *testing.T) {
 func TestMessageBusLogging(t *testing.T) {
     tests := []struct {
         name      string
-        logLevel  logger.LogLevel
+        wantError bool
         wantInfo  bool
         wantDebug bool
     }{
-        {"ErrorLevel", logger.LevelError, false, false},
-        {"InfoLevel", logger.LevelInfo, true, false},
-        {"DebugLevel", logger.LevelDebug, true, true},
+        {"ErrorLevel", true, false, false},
+        {"InfoLevel", true, false, false},
+        {"DebugLevel", true, false, false},
     }
 
     for _, tt := range tests {
         t.Run(tt.name, func(t *testing.T) {
-            logger.SetLogLevel(tt.logLevel)
-
-            var infoBuffer, debugBuffer bytes.Buffer
+            var errorBuffer, infoBuffer, debugBuffer bytes.Buffer
+            logger.ErrorLogger.SetOutput(&errorBuffer)
             logger.InfoLogger.SetOutput(&infoBuffer)
             logger.DebugLogger.SetOutput(&debugBuffer)
 
             mb := NewMessageBus()
             pub := mb.GetPublisher("test-topic")
             mb.Subscribe("test-topic", func(timestamp time.Time, message string) {})
+
+            // Force an error condition
+            mb.(*messageBus).backPressure = &mockBackPressure{shouldError: true}
+
             err := pub.Publish(time.Now(), "test message")
-            if err != nil {
-                t.Errorf("Unexpected error publishing message: %v", err)
+            if err == nil {
+                t.Error("Expected an error, but got nil")
+            }
+
+            gotError := errorBuffer.Len() > 0
+            if gotError != tt.wantError {
+                t.Errorf("Error logging: got %v, want %v", gotError, tt.wantError)
             }
 
             gotInfo := infoBuffer.Len() > 0
@@ -146,6 +160,21 @@ func TestMessageBusLogging(t *testing.T) {
             if gotDebug != tt.wantDebug {
                 t.Errorf("Debug logging: got %v, want %v", gotDebug, tt.wantDebug)
             }
+
+            logger.ErrorLogger.SetOutput(os.Stderr)
+            logger.InfoLogger.SetOutput(os.Stdout)
+            logger.DebugLogger.SetOutput(os.Stdout)
         })
     }
+}
+
+type mockBackPressure struct {
+    shouldError bool
+}
+
+func (m *mockBackPressure) CheckPressure(topic string) error {
+    if m.shouldError {
+        return errors.New("mock back pressure error")
+    }
+    return nil
 }

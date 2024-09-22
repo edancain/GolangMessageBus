@@ -44,7 +44,7 @@ type messageBus struct {
 	// The BackPressureManager monitors the rate of message production and consumption.
 	// If publishers are producing messages faster than subscribers can consume them, it can slow down or temporarily stop publishers to prevent system overload.
 	// This helps maintain system stability and prevents memory exhaustion from buffering too many messages.
-	backPressure      *backpressure.BackPressureManager
+	backPressure      types.BackPressureManager
 
 	// orderedDelivery *OrderedDeliveryManager:
 	// This component ensures that messages are delivered to subscribers in the correct order, which is crucial for maintaining data integrity in many systems.
@@ -52,7 +52,7 @@ type messageBus struct {
 	// It may use techniques like message sequencing or timestamps to track the order of messages.
 	// It can buffer out-of-order messages and deliver them only when all preceding messages have been processed.
 	//  This is particularly important in scenarios where the order of events matters, like in your example of rocket telemetry data.
-	orderedDelivery   *ordereddelivery.OrderedDeliveryManager
+	orderedDelivery   types.OrderedDeliveryManager
 
 	// mutex sync.RWMutex:
 	// This is a read-write mutex from Go's sync package, used for synchronization.
@@ -75,13 +75,13 @@ type messageBus struct {
 
 // NewMessageBus creates and returns a new MessageBus instance
 func NewMessageBus() types.MessageBus {
-	return &messageBus{
-		publishers:      make(map[string]map[types.Publisher]struct{}),
-		subscribers:     make(map[string][]types.Subscription),
-		messages:        datadictionary.NewDataDictionary(),
-		backPressure:    backpressure.NewBackPressureManager(1000), //a default value
-		orderedDelivery: ordereddelivery.NewOrderedDeliveryManager(),
-	}
+    return &messageBus{
+        publishers:      make(map[string]map[types.Publisher]struct{}),
+        subscribers:     make(map[string][]types.Subscription),
+        messages:        datadictionary.NewDataDictionary(),
+        backPressure:    backpressure.NewBackPressureManager(1000), // This should return types.BackPressureManager
+        orderedDelivery: ordereddelivery.NewOrderedDeliveryManager(),
+    }
 }
 
 // GetPublisher returns a new Publisher for the given topic
@@ -132,34 +132,31 @@ func (mb *messageBus) Subscribe(topic string, sub types.Subscription) (unsubscri
 // publish sends a message to all subscribers of the given topic
 // demonstrates error handling, returning errors for back pressure issues and message storage failures.
 func (mb *messageBus) PublishMessage(msg types.Message) error {
-	mb.mutex.RLock()
-	defer mb.mutex.RUnlock()
+    mb.mutex.RLock()
+    defer mb.mutex.RUnlock()
 
-	if err := mb.backPressure.CheckPressure(msg.Topic); err != nil {
-		logger.ErrorLogger.Printf("Back pressure error for topic %s: %v", msg.Topic, err)
-		return err
-	}
-
-	// message persistence with the DataDictionary
-	if err := mb.messages.Store(msg); err != nil {
-		logger.ErrorLogger.Printf("Failed to store message for topic %s: %v", msg.Topic, err)
-		return err
-	}
-
-	subscribers, exists := mb.subscribers[msg.Topic]
-    if !exists {
-        return nil // No subscribers for this topic, which is not an error
+    if err := mb.backPressure.CheckPressure(msg.Topic); err != nil {
+        logger.ErrorLogger.Printf("Back pressure error for topic %s: %v", msg.Topic, err)
+        return err
     }
 
-    for _, sub := range subscribers {
-        go func(s types.Subscription) {
-            if err := mb.orderedDelivery.DeliverMessage(msg, s); err != nil {
-                logger.ErrorLogger.Printf("Error delivering message for topic %s: %v", msg.Topic, err)
-            }
-        }(sub)
+    if err := mb.messages.Store(msg); err != nil {
+        logger.ErrorLogger.Printf("Failed to store message for topic %s: %v", msg.Topic, err)
+        return err
     }
 
-    mb.msgCount.Add(1)
+    subscribers, exists := mb.subscribers[msg.Topic]
+    if exists {
+        for _, sub := range subscribers {
+            go func(s types.Subscription) {
+                if err := mb.orderedDelivery.DeliverMessage(msg, s); err != nil {
+                    logger.ErrorLogger.Printf("Error delivering message for topic %s: %v", msg.Topic, err)
+                }
+            }(sub)
+        }
+    }
+
+    mb.msgCount.Add(1) // Always increment the message count
     return nil
 }
 
