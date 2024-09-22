@@ -4,6 +4,8 @@ import (
 	"sync"
 	"time"
 	"fmt"
+
+	"github.com/edancain/RocketLab/bus/logger" 
 )
 
 // BackPressureManager handles scenarios where publishers outpace subscribers
@@ -36,7 +38,9 @@ func (bpm *BackPressureManager) CheckPressure(topic string) error {
         if now.Sub(r.timestamp) < time.Second {
             r.count++
             if r.count > bpm.threshold {
-                return fmt.Errorf("back pressure applied: too many messages for topic %s", topic)
+                err := fmt.Errorf("back pressure applied: too many messages for topic %s", topic)
+                logger.ErrorLogger.Println(err)
+                return err
             }
         } else {
             r.count = 1

@@ -37,36 +37,38 @@ func (dd *DataDictionary) Store(msg types.Message) error {
 
     if _, exists := dd.messages[msg.Topic]; !exists {
         dd.messages[msg.Topic] = list.New()
+        logger.InfoLogger.Printf("New topic created in DataDictionary: %s", msg.Topic)
     }
 
     if dd.messages[msg.Topic].Len() >= maxMessagesPerTopic {
-        return fmt.Errorf("max messages per topic reached")
+        err := fmt.Errorf("max messages per topic reached for topic %s", msg.Topic)
+        logger.ErrorLogger.Printf("Failed to store message: %v", err)
+        return err
     }
 
     dd.messages[msg.Topic].PushBack(msg)
+    logger.DebugLogger.Printf("Stored message for topic %s", msg.Topic)
     return nil
 }
 
 // GetMessages retrieves messages for a given topic and time range
 func (dd *DataDictionary) GetMessages(topic string, start, end time.Time) []types.Message {
-	dd.mutex.RLock()
-	defer dd.mutex.RUnlock()
+    dd.mutex.RLock()
+    defer dd.mutex.RUnlock()
 
-	var result []types.Message
-	if msgList, exists := dd.messages[topic]; exists {
-		for e := msgList.Front(); e != nil; e = e.Next() {
-			msg := e.Value.(types.Message)
-			if msg.Timestamp.After(start) && msg.Timestamp.Before(end) {
-				result = append(result, msg)
-			}
-		}
-	}
-	
-	if logger.IsDebugEnabled() {
-		logger.DebugLogger.Printf("Retrieved %d messages for topic %s between %v and %v", len(result), topic, start, end)
-	}
-	
-	return result
+    var result []types.Message
+    if msgList, exists := dd.messages[topic]; exists {
+        for e := msgList.Front(); e != nil; e = e.Next() {
+            msg := e.Value.(types.Message)
+            if msg.Timestamp.After(start) && msg.Timestamp.Before(end) {
+                result = append(result, msg)
+            }
+        }
+    }
+    
+    logger.DebugLogger.Printf("Retrieved %d messages for topic %s between %v and %v", len(result), topic, start, end)
+    
+    return result
 }
 
 func (dd *DataDictionary) periodicCleanup() {
@@ -99,7 +101,8 @@ func (dd *DataDictionary) cleanupExpiredMessages() {
         }
         if msgList.Len() == 0 {
             delete(dd.messages, topic)
+            logger.InfoLogger.Printf("Removed empty topic %s", topic)
         }
-        fmt.Printf("Cleaned up %d messages for topic %s\n", removedCount, topic)
+        logger.DebugLogger.Printf("Cleaned up %d messages for topic %s", removedCount, topic)
     }
 }
