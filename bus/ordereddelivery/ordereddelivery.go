@@ -56,20 +56,28 @@ func (odm *OrderedDeliveryManager) DeliverMessage(msg types.Message, sub types.S
 	queue := odm.topicQueues[msg.Topic]
 	heap.Push(queue, msg)
 
+	go odm.processQueue(msg.Topic, sub)
+
+	return nil
+}
+
+func (odm *OrderedDeliveryManager) processQueue(topic string, sub types.Subscription) {
+	odm.mutex.Lock()
+	defer odm.mutex.Unlock()
+
+	queue := odm.topicQueues[topic]
 	deliveredCount := 0
+
 	for queue.Len() > 0 {
 		nextMsg := heap.Pop(queue).(types.Message)
-		if time.Until(nextMsg.Timestamp) <= 0 {
-			sub(nextMsg.Timestamp, nextMsg.Content)
-			deliveredCount++
-		} else {
-			heap.Push(queue, nextMsg)
-			break
-		}
+		go func(m types.Message) {
+			time.Sleep(time.Until(m.Timestamp))
+			sub(m.Timestamp, m.Content)
+		}(nextMsg)
+		deliveredCount++
 	}
 
 	if logger.IsDebugEnabled() {
-		logger.DebugLogger.Printf("Delivered %d messages for topic %s", deliveredCount, msg.Topic)
+		logger.DebugLogger.Printf("Scheduled %d messages for delivery for topic %s", deliveredCount, topic)
 	}
-	return nil
 }
