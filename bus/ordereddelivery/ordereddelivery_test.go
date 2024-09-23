@@ -160,6 +160,9 @@ func TestLogLevels(t *testing.T) {
 				t.Errorf("Unexpected error: %v", err)
 			}
 
+			// Give some time for the goroutine to execute
+			time.Sleep(50 * time.Millisecond)
+
 			gotError := errorWriter.Len() > 0
 			if gotError != tt.wantError {
 				t.Errorf("Error logging: got %v, want %v", gotError, tt.wantError)
@@ -174,6 +177,11 @@ func TestLogLevels(t *testing.T) {
 			if gotDebug != tt.wantDebug {
 				t.Errorf("Debug logging: got %v, want %v", gotDebug, tt.wantDebug)
 			}
+
+			// Print the log contents for debugging
+			t.Logf("Error log: %s", errorWriter.String())
+			t.Logf("Info log: %s", infoWriter.String())
+			t.Logf("Debug log: %s", debugWriter.String())
 		})
 	}
 }

@@ -56,6 +56,10 @@ func (odm *OrderedDeliveryManager) DeliverMessage(msg types.Message, sub types.S
 	queue := odm.topicQueues[msg.Topic]
 	heap.Push(queue, msg)
 
+	if logger.IsDebugEnabled() {
+		logger.DebugLogger.Printf("Message added to queue for topic %s", msg.Topic)
+	}
+
 	go odm.processQueue(msg.Topic, sub)
 
 	return nil
@@ -73,6 +77,9 @@ func (odm *OrderedDeliveryManager) processQueue(topic string, sub types.Subscrip
 		go func(m types.Message) {
 			time.Sleep(time.Until(m.Timestamp))
 			sub(m.Timestamp, m.Content)
+			if logger.IsDebugEnabled() {
+				logger.DebugLogger.Printf("Message delivered for topic %s: %s", topic, m.Content)
+			}
 		}(nextMsg)
 		deliveredCount++
 	}
