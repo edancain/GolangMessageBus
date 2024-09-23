@@ -37,17 +37,23 @@ func (dd *DataDictionary) Store(msg types.Message) error {
 
     if _, exists := dd.messages[msg.Topic]; !exists {
         dd.messages[msg.Topic] = list.New()
-        logger.InfoLogger.Printf("New topic created in DataDictionary: %s", msg.Topic)
+        if logger.GetLogLevel() >= logger.LevelInfo {
+            logger.InfoLogger.Printf("New topic created in DataDictionary: %s", msg.Topic)
+        }
     }
 
     if dd.messages[msg.Topic].Len() >= maxMessagesPerTopic {
         err := fmt.Errorf("max messages per topic reached for topic %s", msg.Topic)
-        logger.ErrorLogger.Printf("Failed to store message: %v", err)
+        if logger.GetLogLevel() >= logger.LevelError {
+            logger.ErrorLogger.Printf("Failed to store message: %v", err)
+        }
         return err
     }
 
     dd.messages[msg.Topic].PushBack(msg)
-    logger.DebugLogger.Printf("Stored message for topic %s", msg.Topic)
+    if logger.GetLogLevel() >= logger.LevelDebug {
+        logger.DebugLogger.Printf("Stored message for topic %s", msg.Topic)
+    }
     return nil
 }
 
