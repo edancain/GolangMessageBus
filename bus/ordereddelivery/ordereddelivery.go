@@ -5,8 +5,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/edancain/RocketLab/types"
 	"github.com/edancain/RocketLab/bus/logger"
+	"github.com/edancain/RocketLab/types"
 )
 
 // OrderedDeliveryManager ensures messages are delivered in order
@@ -41,34 +41,35 @@ func NewOrderedDeliveryManager() *OrderedDeliveryManager {
 
 // DeliverMessage delivers a message to a subscriber in order
 func (odm *OrderedDeliveryManager) DeliverMessage(msg types.Message, sub types.Subscription) error {
-    odm.mutex.Lock()
-    defer odm.mutex.Unlock()
+	odm.mutex.Lock()
+	defer odm.mutex.Unlock()
 
-    if _, exists := odm.topicQueues[msg.Topic]; !exists {
-        pq := make(priorityQueue, 0)
-        odm.topicQueues[msg.Topic] = &pq
-        if logger.IsInfoEnabled() {
+	if _, exists := odm.topicQueues[msg.Topic]; !exists {
+		pq := make(priorityQueue, 0)
+		odm.topicQueues[msg.Topic] = &pq
+		heap.Init(odm.topicQueues[msg.Topic])
+		if logger.IsInfoEnabled() {
 			logger.InfoLogger.Printf("New topic queue created for: %s", msg.Topic)
 		}
-		
-    }
+	}
 
-    queue := odm.topicQueues[msg.Topic]
-    heap.Push(queue, msg)
+	queue := odm.topicQueues[msg.Topic]
+	heap.Push(queue, msg)
 
-    deliveredCount := 0
-    for queue.Len() > 0 {
-        nextMsg := heap.Pop(queue).(types.Message)
-        if time.Since(nextMsg.Timestamp) >= 0 {
-            sub(nextMsg.Timestamp, nextMsg.Content)
-            deliveredCount++
-        } else {
-            heap.Push(queue, nextMsg)
-        }
-    }
+	deliveredCount := 0
+	for queue.Len() > 0 {
+		nextMsg := heap.Pop(queue).(types.Message)
+		if time.Until(nextMsg.Timestamp) <= 0 {
+			sub(nextMsg.Timestamp, nextMsg.Content)
+			deliveredCount++
+		} else {
+			heap.Push(queue, nextMsg)
+			break
+		}
+	}
 
-    if logger.IsDebugEnabled() {
+	if logger.IsDebugEnabled() {
 		logger.DebugLogger.Printf("Delivered %d messages for topic %s", deliveredCount, msg.Topic)
 	}
-    return nil
+	return nil
 }
