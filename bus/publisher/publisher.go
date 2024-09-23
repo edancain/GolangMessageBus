@@ -1,9 +1,9 @@
 package publisher
 
 import (
+	"errors"
 	"sync/atomic"
 	"time"
-    "errors"
 
 	"github.com/edancain/RocketLab/bus/logger"
 	"github.com/edancain/RocketLab/types"
@@ -29,8 +29,8 @@ func NewPublisher(topic string, bus types.MessageBus) types.Publisher {
 func (p *Publisher) Publish(timestamp time.Time, message string) error {
 	if !p.active.Load() {
 		err := errors.New("publisher is closed")
-        logger.ErrorLogger.Printf("Attempt to publish on closed publisher for topic %s: %v", p.topic, err)
-        return err
+		logger.ErrorLogger.Printf("Attempt to publish on closed publisher for topic %s: %v", p.topic, err)
+		return err
 
 	}
 
@@ -41,19 +41,19 @@ func (p *Publisher) Publish(timestamp time.Time, message string) error {
 	}
 
 	if err := p.bus.PublishMessage(msg); err != nil {
-        logger.ErrorLogger.Printf("Failed to publish message on topic %s: %v", p.topic, err)
-        return err
-    }
+		logger.ErrorLogger.Printf("Failed to publish message on topic %s: %v", p.topic, err)
+		return err
+	}
 
-    if logger.IsInfoEnabled() {
-        logger.InfoLogger.Printf("Message published on topic: %s, timestamp: %v", p.topic, timestamp)
-    }
+	if logger.IsInfoEnabled() {
+		logger.InfoLogger.Printf("Message published on topic: %s, timestamp: %v", p.topic, timestamp)
+	}
 
-    if logger.IsDebugEnabled() {
-        logger.DebugLogger.Printf("Message published: %+v", msg)
-    }
+	if logger.IsDebugEnabled() {
+		logger.DebugLogger.Printf("Message published: %+v", msg)
+	}
 
-    return nil
+	return nil
 }
 
 // Close marks the publisher as inactive

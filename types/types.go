@@ -18,24 +18,24 @@ type Stats struct {
 }
 
 type BackPressureManager interface {
-    CheckPressure(topic string) error
+	CheckPressure(topic string) error
 }
 
 type DataDictionary interface {
-    Store(msg Message) error
-    GetMessages(topic string, start, end time.Time) []Message
+	Store(msg Message) error
+	GetMessages(topic string, start, end time.Time) []Message
 }
 
 type MessageBus interface {
-    GetPublisher(topic string) Publisher
-    Subscribe(topic string, sub Subscription) (unsubscribe func())
-    Stats(now time.Time) Stats
-    PublishMessage(msg Message) error
-    RemovePublisher(p Publisher)
+	GetPublisher(topic string) Publisher
+	Subscribe(topic string, sub Subscription) (unsubscribe func())
+	Stats(now time.Time) Stats
+	PublishMessage(msg Message) error
+	RemovePublisher(p Publisher)
 }
 
 type OrderedDeliveryManager interface {
-    DeliverMessage(msg Message, sub Subscription) error
+	DeliverMessage(msg Message, sub Subscription) error
 }
 
 type Publisher interface {

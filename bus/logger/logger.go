@@ -33,22 +33,22 @@ func init() {
 
 // In logger/logger.go
 func SetLogLevel(level LogLevel) {
-    levelMutex.Lock()
-    defer levelMutex.Unlock()
-    currentLevel = level
+	levelMutex.Lock()
+	defer levelMutex.Unlock()
+	currentLevel = level
 
-    // Always keep ErrorLogger active
-    if level < LevelInfo {
-        InfoLogger.SetOutput(io.Discard)
-    } else {
-        InfoLogger.SetOutput(os.Stdout)
-    }
+	// Always keep ErrorLogger active
+	if level < LevelInfo {
+		InfoLogger.SetOutput(io.Discard)
+	} else {
+		InfoLogger.SetOutput(os.Stdout)
+	}
 
-    if level < LevelDebug {
-        DebugLogger.SetOutput(io.Discard)
-    } else {
-        DebugLogger.SetOutput(os.Stdout)
-    }
+	if level < LevelDebug {
+		DebugLogger.SetOutput(io.Discard)
+	} else {
+		DebugLogger.SetOutput(os.Stdout)
+	}
 }
 
 func GetLogLevel() LogLevel {
@@ -58,9 +58,9 @@ func GetLogLevel() LogLevel {
 }
 
 func IsDebugEnabled() bool {
-    return GetLogLevel() >= LevelDebug
+	return GetLogLevel() >= LevelDebug
 }
 
 func IsInfoEnabled() bool {
-    return GetLogLevel() >= LevelInfo
+	return GetLogLevel() >= LevelInfo
 }
