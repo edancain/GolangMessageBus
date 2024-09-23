@@ -183,6 +183,7 @@ func (mb *messageBus) PublishMessage(msg types.Message) error {
 	subscribers, exists := mb.subscribers[msg.Topic]
 	if exists {
 		for _, sub := range subscribers {
+			// goroutine that creates a new goroutine for each subscriber to deliver the message asynchronously.
 			go func(s types.Subscription) {
 				if err := mb.orderedDelivery.DeliverMessage(msg, s); err != nil {
 					logger.ErrorLogger.Printf("Error delivering message for topic %s: %v", msg.Topic, err)
