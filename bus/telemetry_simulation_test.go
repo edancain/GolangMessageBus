@@ -36,17 +36,19 @@ func TestRocketTelemetrySimulation(t *testing.T) {
 		}
 	}
 
-	mb.Subscribe("latitude", createSubscriber("position"))
-	mb.Subscribe("longitude", createSubscriber("position"))
-	mb.Subscribe("altitude", createSubscriber("position"))
-	mb.Subscribe("orientation", createSubscriber("position"))
+	unsubscribeFuncs := make(map[string]func())
 
-	mb.Subscribe("temperature", createSubscriber("status"))
-	mb.Subscribe("fuel-level", createSubscriber("status"))
+	unsubscribeFuncs["latitude"] = mb.Subscribe("latitude", createSubscriber("position"))
+	unsubscribeFuncs["longitude"] = mb.Subscribe("longitude", createSubscriber("position"))
+	unsubscribeFuncs["altitude"] = mb.Subscribe("altitude", createSubscriber("position"))
+	unsubscribeFuncs["orientation"] = mb.Subscribe("orientation", createSubscriber("position"))
 
-	mb.Subscribe("velocity", createSubscriber("environment"))
-	mb.Subscribe("atmospheric_pressure", createSubscriber("environment"))
-	mb.Subscribe("air_density", createSubscriber("environment"))
+	unsubscribeFuncs["temperature"] = mb.Subscribe("temperature", createSubscriber("status"))
+	unsubscribeFuncs["fuel-level"] = mb.Subscribe("fuel-level", createSubscriber("status"))
+
+	unsubscribeFuncs["velocity"] = mb.Subscribe("velocity", createSubscriber("environment"))
+	unsubscribeFuncs["atmospheric_pressure"] = mb.Subscribe("atmospheric_pressure", createSubscriber("environment"))
+	unsubscribeFuncs["air_density"] = mb.Subscribe("air_density", createSubscriber("environment"))
 
 	// Simulate high frequency data publishing
 	var wg sync.WaitGroup
@@ -105,4 +107,14 @@ func TestRocketTelemetrySimulation(t *testing.T) {
 
 	logger.InfoLogger.Printf("Test completed. Total messages: %d, Publishers: %d, Subscriptions: %d",
 		stats.TotalMessages, stats.PublisherCount, stats.SubscriptionCount)
+
+	// unsubscibe from a single topic.
+	unsubscribeFuncs["latitude"]()
+
+	// Unsubscribe from all topics, ensure that all subscriptions are cleaned up after the test, regardless of whether it passes or fails.
+	t.Cleanup(func() {
+		for _, unsubscribe := range unsubscribeFuncs {
+			unsubscribe()
+		}
+	})
 }

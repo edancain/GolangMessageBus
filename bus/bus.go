@@ -112,8 +112,51 @@ func (mb *messageBus) GetPublisher(topic string) types.Publisher {
 		mb.publishers[topic] = make(map[types.Publisher]struct{})
 	}
 
+	// create a new Publisher instance
 	pub := publisher.NewPublisher(topic, mb)
+
+	// This line adds the new publisher to the mb.publishers map.
+	// mb.publishers is a nested map: map[string]map[types.Publisher]struct{}.
+	// mb.publishers[topic] accesses (or creates) the inner map for the given topic.
+	// [pub] = struct{}{} adds the new publisher as a key in this inner map.
+	// struct{}{} is an empty struct, often used as a space-efficient way to represent a set in Go (we only care about the keys, not the values).
 	mb.publishers[topic][pub] = struct{}{}
+	// mb.publishers is a nested map. Its type is map[string]map[types.Publisher]struct{}.
+	// The outer map uses topic (a string) as its key.
+	// The inner map uses pub (a Publisher) as its key.
+	// The use of struct{}{} as the value in the inner map is a memory-efficient way to implement a set-like
+	// structure in Go. It allows the MessageBus to track which publishers exist for each topic
+	//without storing any additional data about them.
+
+	// mb.publishers[topic] returns a map[types.Publisher]struct{}.
+
+	// This inner map contains all publishers for that topic as keys. To check if a specific publisher exists for a topic, you'd do something like:
+	// innerMap, topicExists := mb.publishers[topic]
+	// if topicExists {
+	//	 _, pubExists := innerMap[specificPublisher]
+	//  pubExists will be true if the publisher exists for this topic
+	// }
+
+	// GPS example:
+	// Topic:
+	// The topic would indeed be "GPS". This represents the type of data being published.
+	// Publishers:
+	// Each GPS unit on the rocket would be a separate publisher for the "GPS" topic. For example:
+
+	// GPS Unit 1 (Primary)
+	// GPS Unit 2 (Backup)
+	// GPS Unit 3 (Secondary Backup)
+	// This structure allows for:
+
+	// Redundancy: Multiple GPS units can publish data independently.
+	// Fault Tolerance: If one GPS unit fails, others can continue providing data.
+	// Data Comparison: Subscribers can receive data from all GPS units and compare for accuracy.
+
+	// In your rocket telemetry system:
+	// Each GPS unit would get its own publisher through mb.GetPublisher("GPS").
+	// Each unit would publish its data independently using its publisher.
+	// Subscribers to the "GPS" topic would receive data from all GPS units.
+
 	mb.pubCount.Add(1)
 
 	return pub
@@ -137,6 +180,10 @@ func (mb *messageBus) Subscribe(topic string, sub types.Subscription) (unsubscri
 		for i, s := range mb.subscribers[topic] {
 			if &s == &sub {
 				mb.subscribers[topic] = append(mb.subscribers[topic][:i], mb.subscribers[topic][i+1:]...)
+				// mb.subscribers[topic][:i] creates a slice containing all elements up to (but not including) index i.
+				// mb.subscribers[topic][i+1:] creates a slice containing all elements after index i.
+				// The append function is then used to join these two slices together, effectively removing the element at index i.
+				// The result is then assigned back to mb.subscribers[topic], updating the slice of subscribers for this topic.
 				mb.subCount.Add(-1)
 				break
 			}
@@ -150,6 +197,11 @@ func (mb *messageBus) Subscribe(topic string, sub types.Subscription) (unsubscri
 // Uses a read lock, allowing multiple goroutines to publish concurrently.
 // Checks for back pressure and stores the message.
 // If subscribers exist for the topic, it starts a new goroutine for each subscriber to deliver the message.
+// The use of goroutines for each subscriber allows the system to handle slow subscribers without
+// blocking the entire system. If one subscriber is slow to process messages, it doesn't affect the delivery to other subscribers.
+// This design allows for high concurrency (multiple publishers can publish simultaneously, and subscribers
+// receive messages concurrently) while maintaining order and preventing system overload through back pressure.
+
 // Increments the msgCount atomically.
 func (mb *messageBus) PublishMessage(msg types.Message) error {
 	// This acquires a read lock on the mutex.
@@ -164,12 +216,18 @@ func (mb *messageBus) PublishMessage(msg types.Message) error {
 
 	// The above The purpose of this pattern is to provide safe concurrent access to shared resources for read operations. It allows multiple readers to access the protected data simultaneously, improving performance in read-heavy scenarios.
 	// Key points:
-
 	// It's used for operations that only read shared data and don't modify it.
 	// Multiple read locks can be held simultaneously by different goroutines.
 	// A read lock blocks any attempt to acquire a write lock, but not other read locks.
 	// This pattern ensures that the lock is always released, preventing potential deadlocks.
 
+	// Back Pressure Mechanism:
+	// Back pressure is a technique used to handle scenarios where the rate of incoming data exceeds the rate at which it can be
+	// processed. In your system, it's implemented in the CheckPressure method of the BackPressureManager. Generally, it works like this:
+
+	// It keeps track of how many messages are being published for each topic within a given time frame (usually per second).
+	// If the number of messages for a topic exceeds a certain threshold within that time frame, it returns an error, preventing
+	// further messages from being published until the rate decreases.
 	if err := mb.backPressure.CheckPressure(msg.Topic); err != nil {
 		logger.ErrorLogger.Printf("Back pressure error for topic %s: %v", msg.Topic, err)
 		return err
@@ -185,6 +243,10 @@ func (mb *messageBus) PublishMessage(msg types.Message) error {
 		for _, sub := range subscribers {
 			// goroutine that creates a new goroutine for each subscriber to deliver the message asynchronously.
 			go func(s types.Subscription) {
+				// DeliverMessage maintains a priority queue for each topic, ordered by message timestamp.
+				// When a new message arrives, it's added to the queue.
+				// The function then processes the queue, delivering messages that are ready (based on their timestamp).
+				// Messages with future timestamps are kept in the queue until their time comes.
 				if err := mb.orderedDelivery.DeliverMessage(msg, s); err != nil {
 					logger.ErrorLogger.Printf("Error delivering message for topic %s: %v", msg.Topic, err)
 				}
@@ -192,7 +254,7 @@ func (mb *messageBus) PublishMessage(msg types.Message) error {
 		}
 	}
 
-	mb.msgCount.Add(1) // Always increment the message count
+	mb.msgCount.Add(1) // Always increment the message count. Atomic operations (like mb.msgCount.Add(1)) are inherently thread-safe and don't require additional synchronization.
 	return nil
 }
 
