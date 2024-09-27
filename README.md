@@ -11,8 +11,11 @@ I have created a simulation test (telemetry_simulation_test.go) for telemetry da
 
 The TestRocketTelemetrySimulation function is an integration test for the message bus system. It simulates a very basic high-frequency telemetry data stream from a rocket. It tests that the message bus is functioning as expected. NB: This test does not introduce errors nor does it simulate different sensor rates, i.e IMU @ 1000Hz and GPS at 1Hz.
 
+
 The code within the file telemetry_simulation_test.go, please run:
+
 go test ./bus -v -run TestRocketTelemetrySimulation
+
 
 In the test message topics (latitude, longitude, altitude, temperature, fuel-level, velocity, atmospheric_pressure, air_density, orientation) are used.
 Tests:

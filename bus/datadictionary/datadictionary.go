@@ -15,16 +15,16 @@ const (
 	messageExpirationTime = 24 * time.Hour
 )
 
-// DataDictionary stores messages for persistence and potential replay
+// DataDictionary stores messages for persistence and potential replay. It does not write to disk.
 
 // DataDictionary uses a map (messages) where keys are topic strings and values are pointers to list.List.
 // Each list.List contains messages for a specific topic.
 type DataDictionary struct {
 	messages map[string]*list.List // map of topic to list of messages. Uses list.List for O(1) insertion at the end and efficient removal of elements.
-	mutex    sync.RWMutex          // for thread-safe access to the map.
+	mutex    sync.RWMutex          // Thread-safe access to the map.
 }
 
-// NewDataDictionary creates a new DataDictionary
+// Creates a new DataDictionary
 func NewDataDictionary() *DataDictionary {
 	dd := &DataDictionary{
 		messages: make(map[string]*list.List),

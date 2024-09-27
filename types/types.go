@@ -21,7 +21,7 @@ type Stats struct {
 }
 
 // Interface Declarations:
-// The rest of the file defines interfaces for various components of the system. These are crucial for several reasons:
+// This file defines interfaces for various components of the system. These are crucial for several reasons:
 // a. Abstraction: Interfaces define behavior without specifying implementation. This allows for flexibility in how these behaviors are implemented.
 // b. Decoupling: By programming to interfaces rather than concrete implementations, different parts of your system are less tightly coupled. This makes the system more modular and easier to maintain and extend.
 // c. Testability: Interfaces make it easy to create mock implementations for testing.
