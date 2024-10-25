@@ -1,3 +1,3 @@
-module github.com/edancain/RocketLab
+module github.com/edancain/OperationsSoftware
 
 go 1.23
