@@ -5,8 +5,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/edancain/RocketLab/bus/logger"
-	"github.com/edancain/RocketLab/types"
+	"github.com/edancain/OperationsSoftware/bus/logger"
+	"github.com/edancain/OperationsSoftware/types"
 )
 
 // OrderedDeliveryManager ensures messages are delivered in order

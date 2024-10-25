@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/edancain/RocketLab/bus/logger"
+	"github.com/edancain/OperationsSoftware/bus/logger"
 )
 
 type levelWriter struct {

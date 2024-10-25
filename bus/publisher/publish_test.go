@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/edancain/RocketLab/bus/logger"
-	"github.com/edancain/RocketLab/types"
+	"github.com/edancain/OperationsSoftware/bus/logger"
+	"github.com/edancain/OperationsSoftware/types"
 )
 
 // MockMessageBus is a mock implementation of the MessageBus interface for testing

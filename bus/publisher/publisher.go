@@ -5,8 +5,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/edancain/RocketLab/bus/logger"
-	"github.com/edancain/RocketLab/types"
+	"github.com/edancain/OperationsSoftware/bus/logger"
+	"github.com/edancain/OperationsSoftware/types"
 )
 
 // Publisher represents a message publisher for a specific topic
