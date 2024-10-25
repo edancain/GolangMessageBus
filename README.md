@@ -1,4 +1,18 @@
-# RocketLab
+A Message Bus implementation that facilitates publishers being able to push messages to subscribers.
+
+- All Subscriptions are called for each message published for a given topic.
+- A given topic can have multiple publishers.
+- All MessageBus and Publisher functions can be called from different goroutines.
+- Publishers for a topic can be created at any time
+- Subscriptions to a topic can be made at any time
+- MessageBus Stats may be called at any time
+- Publishing should not be affected by subscribers
+- Subscribers for a given topic should not affect each other
+- Publishers for different topics should not affect each other
+
+
+To run the code and unit tests:
+
 
 To run unit tests:
 Unit tests: To run an individual test, ie datadictionary:
