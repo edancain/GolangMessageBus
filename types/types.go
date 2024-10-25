@@ -43,7 +43,7 @@ type DataDictionary interface {
 	GetMessages(topic string, start, end time.Time) []Message
 }
 
-// This is the core interface of your system. It defines how publishers are created, how subscriptions are managed, how messages are published, and how statistics are retrieved.
+// This is the core interface of the system. It defines how publishers are created, how subscriptions are managed, how messages are published, and how statistics are retrieved.
 type MessageBus interface {
 	GetPublisher(topic string) Publisher
 	Subscribe(topic string, sub Subscription) (unsubscribe func())
