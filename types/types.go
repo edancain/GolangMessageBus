@@ -2,7 +2,7 @@ package types
 
 import "time"
 
-// This defines the structure of a message in your system. It includes a timestamp, topic, and content.
+// This defines the structure of a message in the system. It includes a timestamp, topic, and content.
 type Message struct {
 	Timestamp time.Time
 	Topic     string
@@ -23,7 +23,7 @@ type Stats struct {
 // Interface Declarations:
 // This file defines interfaces for various components of the system. These are crucial for several reasons:
 // a. Abstraction: Interfaces define behavior without specifying implementation. This allows for flexibility in how these behaviors are implemented.
-// b. Decoupling: By programming to interfaces rather than concrete implementations, different parts of your system are less tightly coupled. This makes the system more modular and easier to maintain and extend.
+// b. Decoupling: By programming to interfaces rather than concrete implementations, different parts of the system are less tightly coupled. This makes the system more modular and easier to maintain and extend.
 // c. Testability: Interfaces make it easy to create mock implementations for testing.
 // d. Polymorphism: Different implementations of an interface can be used interchangeably, allowing for runtime flexibility.
 
