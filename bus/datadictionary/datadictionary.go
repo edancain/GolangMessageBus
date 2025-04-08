@@ -84,7 +84,7 @@ func (dd *DataDictionary) GetMessages(topic string, start, end time.Time) []type
 		}
 	}
 
-	// Remember, in a production environment, you might want to add more edge cases, such as testing with the exact boundary
+	// In a production environment, we might want to add more edge cases, such as testing with the exact boundary
 	// times, testing with a large number of messages, and testing concurrent access if that's a concern in your use case.
 
 	logger.DebugLogger.Printf("Retrieved %d messages for topic %s between %v and %v", len(result), topic, start, end)
