@@ -98,7 +98,7 @@ func TestRocketTelemetrySimulation(t *testing.T) {
 		t.Errorf("Expected %d environment messages, got %d", expectedMessagesPerType, receivedMessages["environment"])
 	}
 
-	// Check frequency (stretch goal)
+	// Check frequency
 	for _, topic := range topics {
 		if freq, exists := stats.TopicFrequency[topic]; !exists || freq < float64(messageCount)/60 {
 			t.Errorf("Expected frequency for %s to be at least %f, got %f", topic, float64(messageCount)/60, freq)
