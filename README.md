@@ -43,3 +43,7 @@ Note to self, all code passes formatting and linting:
 go fmt ./...
 go vet ./...
 golangci-lint run
+
+
+Development ideas:
+Dead Letter Exchange
