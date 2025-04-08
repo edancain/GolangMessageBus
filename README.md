@@ -46,4 +46,7 @@ golangci-lint run
 
 
 Development ideas:
+Time To Live (TTL):
+Specifying a TTL allows the system to limit the validity period of the message. If a consumer does not process it in due time, it is automatically removed from the queue (and transferred to a dead-letter exchange; read more on that later). TTL is beneficial for time-sensitive commands that become irrelevant after some time has passed without processing.
 Dead Letter Exchange
+Throttling. America's Cup scenario. Throttle the speed of which consumers recieved publisher data, as use with teams and media at AC37
