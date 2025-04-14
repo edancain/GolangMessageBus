@@ -1,6 +1,9 @@
 package types
 
-import "time"
+import (
+	"sync"
+	"time"
+)
 
 // This defines the structure of a message in the system. It includes a timestamp, topic, and content.
 type Message struct {
@@ -18,6 +21,21 @@ type Stats struct {
 	PublisherCount    int
 	SubscriptionCount int
 	TopicFrequency    map[string]float64
+}
+
+// New types to support persistence and playback
+type DataStore struct {
+	LiveData       *DataDictionary
+	StoredSessions map[string]*StoredSession
+	mu             sync.RWMutex
+}
+
+type StoredSession struct {
+	VehicleID    string
+	StartTime    time.Time
+	EndTime      time.Time
+	DataPoints   map[time.Time]map[string]interface{}
+	CurrentIndex int // For playback
 }
 
 // Interface Declarations:
