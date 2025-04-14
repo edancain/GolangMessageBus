@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/edancain/OperationsSoftware/bus/logger"
+	"github.com/edancain/GolangMessageBus/bus/logger"
 )
 
 type levelWriter struct {

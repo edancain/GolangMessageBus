@@ -5,12 +5,12 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/edancain/OperationsSoftware/bus/backpressure"
-	"github.com/edancain/OperationsSoftware/bus/datadictionary"
-	"github.com/edancain/OperationsSoftware/bus/logger"
-	"github.com/edancain/OperationsSoftware/bus/ordereddelivery"
-	"github.com/edancain/OperationsSoftware/bus/publisher"
-	"github.com/edancain/OperationsSoftware/types"
+	"github.com/edancain/GolangMessageBus/bus/backpressure"
+	"github.com/edancain/GolangMessageBus/bus/datadictionary"
+	"github.com/edancain/GolangMessageBus/bus/logger"
+	"github.com/edancain/GolangMessageBus/bus/ordereddelivery"
+	"github.com/edancain/GolangMessageBus/bus/publisher"
+	"github.com/edancain/GolangMessageBus/types"
 )
 
 // MessageBus is the central coordinator of the system

@@ -5,8 +5,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/edancain/OperationsSoftware/bus/logger"
-	"github.com/edancain/OperationsSoftware/types"
+	"github.com/edancain/GolangMessageBus/bus/logger"
+	"github.com/edancain/GolangMessageBus/types"
 )
 
 // Publisher represents a message publisher for a specific topic

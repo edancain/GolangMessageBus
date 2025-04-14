@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/edancain/OperationsSoftware/bus/logger"
+	"github.com/edancain/GolangMessageBus/bus/logger"
 )
 
 // BackPressureManager:

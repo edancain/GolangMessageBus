@@ -1,4 +1,4 @@
-module github.com/edancain/OperationsSoftware
+module github.com/edancain/GolangMessageBus
 
 go 1.23
 
